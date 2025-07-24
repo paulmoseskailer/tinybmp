@@ -27,7 +27,7 @@ name = "draw"
 harness = false
 
 [dependencies]
-embedded-graphics = "0.8.0"
+embedded-graphics = { version = "0.8.0", default-features = false}
 
 [dev-dependencies]
 clap = { version = "3.1.6", features = ["derive"] }
