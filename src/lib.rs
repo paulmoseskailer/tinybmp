@@ -262,7 +262,7 @@ where
 {
     type Color = C;
 
-    fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
+    async fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
     where
         D: DrawTarget<Color = C>,
     {
@@ -284,7 +284,7 @@ where
                             .copied()
                             .unwrap_or(fallback_color)
                     });
-                    target.fill_contiguous(&area, colors)
+                    target.fill_contiguous(&area, colors).await
                 } else {
                     Ok(())
                 }
@@ -303,10 +303,12 @@ where
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
                             let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            target.fill_contiguous(
-                                &row,
-                                colors.by_ref().take(area.size.width as usize),
-                            )?;
+                            target
+                                .fill_contiguous(
+                                    &row,
+                                    colors.by_ref().take(area.size.width as usize),
+                                )
+                                .await?;
                         }
                         Ok(())
                     } else {
@@ -317,7 +319,7 @@ where
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
                         });
-                        target.fill_contiguous(&area, colors)
+                        target.fill_contiguous(&area, colors).await
                     }
                 } else {
                     Ok(())
@@ -337,10 +339,12 @@ where
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
                             let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            target.fill_contiguous(
-                                &row,
-                                colors.by_ref().take(area.size.width as usize),
-                            )?;
+                            target
+                                .fill_contiguous(
+                                    &row,
+                                    colors.by_ref().take(area.size.width as usize),
+                                )
+                                .await?;
                         }
                         Ok(())
                     } else {
@@ -351,37 +355,54 @@ where
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
                         });
-                        target.fill_contiguous(&area, colors)
+                        target.fill_contiguous(&area, colors).await
                     }
                 } else {
                     Ok(())
                 }
             }
-            ColorType::Rgb555 => target.fill_contiguous(
-                &area,
-                RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb555::from(raw).into()),
-            ),
-            ColorType::Rgb565 => target.fill_contiguous(
-                &area,
-                RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb565::from(raw).into()),
-            ),
-            ColorType::Rgb888 => target.fill_contiguous(
-                &area,
-                RawColors::<RawU24>::new(&self.raw_bmp).map(|raw| Rgb888::from(raw).into()),
-            ),
-            ColorType::Xrgb8888 => target.fill_contiguous(
-                &area,
-                RawColors::<RawU32>::new(&self.raw_bmp)
-                    .map(|raw| Rgb888::from(RawU24::new(raw.into_inner())).into()),
-            ),
+            ColorType::Rgb555 => {
+                target
+                    .fill_contiguous(
+                        &area,
+                        RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb555::from(raw).into()),
+                    )
+                    .await
+            }
+            ColorType::Rgb565 => {
+                target
+                    .fill_contiguous(
+                        &area,
+                        RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb565::from(raw).into()),
+                    )
+                    .await
+            }
+            ColorType::Rgb888 => {
+                target
+                    .fill_contiguous(
+                        &area,
+                        RawColors::<RawU24>::new(&self.raw_bmp).map(|raw| Rgb888::from(raw).into()),
+                    )
+                    .await
+            }
+            ColorType::Xrgb8888 => {
+                target
+                    .fill_contiguous(
+                        &area,
+                        RawColors::<RawU32>::new(&self.raw_bmp)
+                            .map(|raw| Rgb888::from(RawU24::new(raw.into_inner())).into()),
+                    )
+                    .await
+            }
         }
     }
 
-    fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
+    async fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
     where
         D: DrawTarget<Color = Self::Color>,
     {
         self.draw(&mut target.translated(-area.top_left).clipped(area))
+            .await
     }
 }
 
